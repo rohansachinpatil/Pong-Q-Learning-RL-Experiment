@@ -1,0 +1,13 @@
+{
+  "episode": 100,
+  "hit_rate": 15.966386554621847,
+  "epsilon": 0.6057704364907278,
+  "qtable_size": 1721,
+  "average_reward": -9.81,
+  "checkpoints": [
+    "qtable_100.pkl",
+    "qtable_1000.pkl",
+    "qtable_500.pkl",
+    "qtable_5000.pkl"
+  ]
+}

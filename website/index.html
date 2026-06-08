@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pong Q-Learning RL Experiment</title>
+    <meta name="description" content="An interactive study of tabular reinforcement learning. Compare a 300-state in-browser training agent with a 6,000-state Python research model.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Document Header -->
+    <header class="doc-header">
+        <div class="header-main">
+            <div class="header-title-block">
+                <h1>Pong Q-Learning RL Experiment</h1>
+                <p class="subtitle">An interactive study comparing a fast 300-state in-browser educational agent with a 6,000-state Python research model.</p>
+            </div>
+            <div class="header-meta">
+                <div class="meta-item">
+                    <span class="meta-label">Method:</span>
+                    <span class="meta-value font-mono">Tabular Q-Learning</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Python Sync:</span>
+                    <span id="last-update" class="meta-value font-mono">Syncing...</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="main-layout">
+
+        <!-- SECTION 1 & 2: LIVE SIMULATION & AGENT BRAIN -->
+        <section class="simulation-section">
+            <div class="section-title">
+                <h2>1. Interactive Educational Agent <span class="badge">300 States</span></h2>
+                <p class="section-desc">Runs entirely in JavaScript. Watch the agent learn to intercept the ball from scratch using the Bellman equation.</p>
+            </div>
+
+            <div class="sim-grid">
+                <!-- Left: Canvas and controls -->
+                <div class="sim-left-panel">
+                    <div class="canvas-viewport">
+                        <canvas id="pongSimulator" width="600" height="385"></canvas>
+                    </div>
+
+                    <!-- Simulator Controls -->
+                    <div class="sim-controls">
+                        <div class="control-row">
+                            <button id="btn-pause-resume" class="btn-primary">Pause Simulation</button>
+                            <button id="btn-clear-qtable" class="btn-secondary">Clear Q-Table</button>
+                            <button id="btn-reset-agent" class="btn-secondary">Reset Statistics</button>
+                        </div>
+                        <div class="control-row">
+                            <div class="control-item">
+                                <label for="sim-speed-select">Simulation Speed:</label>
+                                <select id="sim-speed-select" class="select-field">
+                                    <option value="1">1x (Real-time)</option>
+                                    <option value="2">2x</option>
+                                    <option value="5">5x</option>
+                                    <option value="50">50x (Fast Train)</option>
+                                    <option value="200">200x (Hyper Train)</option>
+                                </select>
+                            </div>
+                            <div class="control-item">
+                                <label class="checkbox-field">
+                                    <input type="checkbox" id="toggle-grid" checked>
+                                    <span class="checkbox-box"></span>
+                                    Show Discretization Grid
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Agent Brain Display -->
+                <div class="sim-right-panel">
+                    <!-- Brain Card -->
+                    <div class="brain-card">
+                        <h3>Agent Decision State</h3>
+                        
+                        <div class="state-vector-block">
+                            <span class="state-label">Current State Vector (s)</span>
+                            <div id="sim-state-vector" class="state-value font-mono">(0, 0, FLAT)</div>
+                        </div>
+
+                        <div class="brain-metrics-row">
+                            <div class="brain-metric-box">
+                                <span class="b-lbl">Selected Action (a)</span>
+                                <span id="sim-action" class="b-val font-mono">STAY</span>
+                            </div>
+                            <div class="brain-metric-box">
+                                <span class="b-lbl">Last Reward (r)</span>
+                                <span id="sim-reward" class="b-val font-mono">0.00</span>
+                            </div>
+                            <div class="brain-metric-box">
+                                <span class="b-lbl">Exploration (Epsilon)</span>
+                                <span id="sim-epsilon" class="b-val font-mono">0.300</span>
+                            </div>
+                        </div>
+
+                        <!-- Active Q-Values table -->
+                        <div class="q-values-table-block">
+                            <h4>Active Q-Values Q(s, a) for Current State</h4>
+                            <table class="q-table font-mono">
+                                <thead>
+                                    <tr>
+                                        <th>Action (a)</th>
+                                        <th>Estimated Value Q(s, a)</th>
+                                        <th>Preference</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr id="q-row-stay">
+                                        <td>STAY (0)</td>
+                                        <td class="q-val-cell">0.0000</td>
+                                        <td><div class="preference-bar"><div class="pref-fill" style="width: 0%"></div></div></td>
+                                    </tr>
+                                    <tr id="q-row-up">
+                                        <td>UP (1)</td>
+                                        <td class="q-val-cell">0.0000</td>
+                                        <td><div class="preference-bar"><div class="pref-fill" style="width: 0%"></div></div></td>
+                                    </tr>
+                                    <tr id="q-row-down">
+                                        <td>DOWN (2)</td>
+                                        <td class="q-val-cell">0.0000</td>
+                                        <td><div class="preference-bar"><div class="pref-fill" style="width: 0%"></div></div></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Local stats card -->
+                    <div class="local-stats-card">
+                        <h3>Local Training Statistics</h3>
+                        <div class="local-stats-grid">
+                            <div class="local-stat-item">
+                                <span class="l-lbl">Episodes</span>
+                                <span id="local-episode" class="l-val font-mono">1</span>
+                            </div>
+                            <div class="local-stat-item">
+                                <span class="l-lbl">Hit Rate (Last 50 Balls)</span>
+                                <span id="local-hitrate" class="l-val font-mono">0.0%</span>
+                            </div>
+                            <div class="local-stat-item">
+                                <span class="l-lbl">States Visited</span>
+                                <span id="local-states-visited" class="l-val font-mono">0 / 300</span>
+                            </div>
+                            <div class="local-stat-item">
+                                <span class="l-lbl">Cumulative Rewards</span>
+                                <span id="local-total-reward" class="l-val font-mono">0.0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 3: LEARNING CURVES (PYTHON TRAINING) -->
+        <section class="telemetry-section">
+            <div class="section-title">
+                <h2>2. Research Agent Telemetry <span class="badge">6,000 States</span></h2>
+                <p class="section-desc">Training history of the fully featured agent compiled from the Python training loops.</p>
+            </div>
+
+            <!-- Dashboard Layout Grid -->
+            <div class="dashboard-grid">
+                <!-- Metrics -->
+                <div class="python-metrics-column">
+                    <div class="py-metric-card">
+                        <span class="py-lbl">Episodes Completed</span>
+                        <span id="val-episode" class="py-val font-mono">0</span>
+                    </div>
+                    <div class="py-metric-card">
+                        <span class="py-lbl">Peak Hit Rate</span>
+                        <span id="val-hitrate" class="py-val font-mono">0.0%</span>
+                    </div>
+                    <div class="py-metric-card">
+                        <span class="py-lbl">Current Epsilon</span>
+                        <span id="val-epsilon" class="py-val font-mono">1.000</span>
+                    </div>
+                    <div class="py-metric-card">
+                        <span class="py-lbl">Q-Table Size</span>
+                        <span id="val-qtable" class="py-val font-mono">0</span>
+                    </div>
+                    <div class="py-metric-card">
+                        <span class="py-lbl">Rolling Reward</span>
+                        <span id="val-reward" class="py-val font-mono">0.00</span>
+                    </div>
+                </div>
+
+                <!-- Charts -->
+                <div class="python-chart-card">
+                    <div class="chart-header">
+                        <h3>Telemetry Curves</h3>
+                        <div class="tab-controls">
+                            <button class="btn-chart-tab active" data-chart="hitrate">Hit Rate</button>
+                            <button class="btn-chart-tab" data-chart="reward">Reward</button>
+                            <button class="btn-chart-tab" data-chart="qtable">Q-Table Growth</button>
+                        </div>
+                    </div>
+                    <div class="chart-canvas-wrapper">
+                        <canvas id="telemetryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 4: CHECKPOINT EVOLUTION -->
+        <section class="timeline-section">
+            <div class="section-title">
+                <h2>3. Behavioral Timeline <span class="badge">Research Run</span></h2>
+                <p class="section-desc">Milestone evaluation recordings demonstrating the emergence of specific capabilities.</p>
+            </div>
+
+            <div class="timeline-grid">
+                <!-- Checkpoint 100 -->
+                <div class="timeline-card" data-episode="100">
+                    <div class="timeline-card-header">
+                        <h4>Episode 100</h4>
+                        <span class="t-badge font-mono">Random Explorer</span>
+                    </div>
+                    <div class="timeline-media">
+                        <div class="replay-skeleton">
+                            <div class="spinner"></div>
+                            <p>Loading Episode 100 GIF...</p>
+                        </div>
+                        <img class="replay-gif" data-src="replays/checkpoint_100.gif" alt="Episode 100 Replay" style="display:none;">
+                    </div>
+                    <div class="timeline-desc">
+                        High exploration (epsilon ≈ 0.60). Paddle movement is jittery and chaotic, occasionally returning balls purely by chance.
+                    </div>
+                </div>
+
+                <!-- Checkpoint 500 -->
+                <div class="timeline-card" data-episode="500">
+                    <div class="timeline-card-header">
+                        <h4>Episode 500</h4>
+                        <span class="t-badge font-mono">Emergent Tracker</span>
+                    </div>
+                    <div class="timeline-media">
+                        <div class="replay-skeleton">
+                            <div class="spinner"></div>
+                            <p>Loading Episode 500 GIF...</p>
+                        </div>
+                        <img class="replay-gif" data-src="replays/checkpoint_500.gif" alt="Episode 500 Replay" style="display:none;">
+                    </div>
+                    <div class="timeline-desc">
+                        Exploration rate is low (epsilon ≈ 0.08). The paddle exhibits basic tracking behavior, attempting to align vertical center lines.
+                    </div>
+                </div>
+
+                <!-- Checkpoint 1000 -->
+                <div class="timeline-card" data-episode="1000">
+                    <div class="timeline-card-header">
+                        <h4>Episode 1000</h4>
+                        <span class="t-badge font-mono">Consistent Defender</span>
+                    </div>
+                    <div class="timeline-media">
+                        <div class="replay-skeleton">
+                            <div class="spinner"></div>
+                            <p>Loading Episode 1000 GIF...</p>
+                        </div>
+                        <img class="replay-gif" data-src="replays/checkpoint_1000.gif" alt="Episode 1000 Replay" style="display:none;">
+                    </div>
+                    <div class="timeline-desc">
+                        Hit rates stabilize around 80%. Agent shows basic velocity anticipation, positioning itself early for flat bounces.
+                    </div>
+                </div>
+
+                <!-- Checkpoint 5000 -->
+                <div class="timeline-card" data-episode="5000">
+                    <div class="timeline-card-header">
+                        <h4>Episode 5000</h4>
+                        <span class="t-badge font-mono">Master Agent</span>
+                    </div>
+                    <div class="timeline-media">
+                        <div class="replay-skeleton">
+                            <div class="spinner"></div>
+                            <p>Loading Episode 5000 GIF...</p>
+                        </div>
+                        <img class="replay-gif" data-src="replays/checkpoint_5000.gif" alt="Episode 5000 Replay" style="display:none;">
+                    </div>
+                    <div class="timeline-desc">
+                        Exploration minimum reached (epsilon = 0.05). Hitting rate converges at ~97%+, defense is solid across all steep angle bounds.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 5: TECHNICAL DETAILS -->
+        <section class="tech-section">
+            <div class="section-title">
+                <h2>4. Tabular RL Discretization Details</h2>
+                <p class="section-desc">Mathematical formulations comparing the representation state spaces used by the two agents.</p>
+            </div>
+
+            <div class="tech-layout-grid">
+                <!-- Mathematical breakdown -->
+                <div class="tech-equations-card">
+                    <h3>Discretization Vector Mapping</h3>
+                    
+                    <div class="comparison-block">
+                        <div class="comp-item">
+                            <h5>Educational Agent (In-Browser)</h5>
+                            <div class="formula font-mono">State = (ball_y_zone, paddle_y_zone, vy_direction)</div>
+                            <p class="formula-desc">Dimensions: $10 \times 10 \times 3 = 300$ states. Focuses on vertical alignment only, enabling full convergence in less than 300 episodes.</p>
+                        </div>
+                        
+                        <div class="comp-item">
+                            <h5>Research Agent (Python Server)</h5>
+                            <div class="formula font-mono">State = (ball_x_zone, ball_y_zone, paddle_y_zone, vy_direction, vx_direction)</div>
+                            <p class="formula-desc">Dimensions: $10 \times 10 \times 10 \times 3 \times 2 = 6,000$ states. Adds depth estimation and horizontal travel directions to prevent state aliasing.</p>
+                        </div>
+                    </div>
+
+                    <div class="diagram-flow-block">
+                        <h4>Temporal Difference Loop</h4>
+                        <div class="flow-pills font-mono">
+                            <span>Environment</span>
+                            <span class="arr">→</span>
+                            <span>State (s)</span>
+                            <span class="arr">→</span>
+                            <span>Action (a)</span>
+                            <span class="arr">→</span>
+                            <span>Reward (r)</span>
+                            <span class="arr">→</span>
+                            <span>Bellman TD Update</span>
+                        </div>
+                        <p class="td-math">
+                            Update Equation:
+                            $$Q(s, a) \leftarrow Q(s, a) + \alpha \left[ r + \gamma \max_{a'} Q(s', a') - Q(s, a) \right]$$
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Explanation text -->
+                <div class="tech-discourse-card">
+                    <h3>Q-Learning Fundamentals</h3>
+                    <p>Tabular Q-learning maintains a lookup table containing estimated values for each state-action pair. In this experiment, the environment calculates values for three possible actions: stay, move up, or move down.</p>
+                    
+                    <h4>Parameters Details:</h4>
+                    <ul class="params-list">
+                        <li><strong>Learning Rate ($\alpha$)</strong>: Set to <code>0.10</code>. Determines the speed of replacing previous value estimates with new experience.</li>
+                        <li><strong>Discount Factor ($\gamma$)</strong>: Set to <code>0.95</code>. Dispositions the agent to value immediate ball reflections over infinite future actions.</li>
+                        <li><strong>Exploration ($\epsilon$)</strong>: Decays from <code>0.60</code> to <code>0.02</code> as the episode count grows. Deciding actions uses the epsilon-greedy algorithm (random exploratory moves versus optimal greedy memory selection).</li>
+                    </ul>
+                    
+                    <p class="foot-note">
+                        *Note: By keeping the state space restricted to 300 slots in-browser, visitors can clear the memory table and watch the policy converge to tracking competence in under two minutes of real-time execution.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="doc-footer">
+        <div class="footer-layout">
+            <p>Pong RL Research Project • Created by <strong>Rohan Patil</strong></p>
+            <p class="built-tech">Technology: Python • Q-Learning • Pygame • HTML5 Canvas • Vanilla CSS • Chart.js</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

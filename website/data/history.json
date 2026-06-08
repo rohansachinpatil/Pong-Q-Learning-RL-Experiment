@@ -1,0 +1,9 @@
+[
+  {
+    "episode": 100,
+    "hit_rate": 15.966386554621847,
+    "epsilon": 0.6057704364907278,
+    "qtable_size": 1721,
+    "average_reward": -9.81
+  }
+]
