@@ -2,7 +2,8 @@
 
 ### "Building Reinforcement Learning from Scratch Without Gymnasium, Stable-Baselines or Deep Learning Frameworks."
 
-LIVE : https://pong-q-learning-rl-experiment-91lb8g6b6.vercel.app/
+LIVE : [https://pong-q-learning-rl-experiment-91lb8g6b6.vercel.app/](https://pong-q-learning-rl-experiment.vercel.app/)
+
 ---
 
 ## Overview
